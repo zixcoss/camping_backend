@@ -40,3 +40,7 @@ out/
 src/main/resources/application.properties
 src/main/resources/application-*.properties
 src/main/resources/application-*.yml
+
+## test token ###
+src/main/java/com/camp/camping_service/controllers/TestController.java
+src/main/java/com/camp/camping_service/dto/TestVerifyToken.java
