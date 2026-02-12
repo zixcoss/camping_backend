@@ -4,6 +4,7 @@ import com.camp.camping_service.constants.ResponseMessage;
 import com.camp.camping_service.dto.request.CreateCampingRequest;
 import com.camp.camping_service.dto.common.UserPrincipal;
 import com.camp.camping_service.dto.request.FavoriteRequest;
+import com.camp.camping_service.dto.request.UpdateCampingRequest;
 import com.camp.camping_service.services.CampingService;
 import com.camp.camping_service.utils.ResponseHelper;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,22 @@ public class CampingController {
     ){
         campingService.createCamping(request, userPrincipal.getClerkId());
         return ResponseHelper.success("Landmark created");
+    }
+
+//    @PostMapping("/create-camping")
+//    public ResponseEntity<Object> createCamping(
+//            @RequestBody CreateCampingRequest request
+//    ){
+//        campingService.createCamping(request, "user_34ekvaVZo5JyAbRZsMEXfSou49z");
+//        return ResponseHelper.success("Landmark created");
+//    }
+
+    @PutMapping("/update-camping")
+    public ResponseEntity<Object> updateCamping(
+            @RequestBody UpdateCampingRequest request
+    ){
+        campingService.updateCamping(request);
+        return ResponseHelper.success("landmark updated");
     }
 
     @GetMapping("/campings/{clerkId}")

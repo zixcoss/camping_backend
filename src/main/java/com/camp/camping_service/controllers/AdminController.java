@@ -40,11 +40,19 @@ public class AdminController {
         );
     }
 
+//    @GetMapping("/my-camping")
+//    public ResponseEntity<Object> myCamping(@AuthenticationPrincipal UserPrincipal userPrincipal){
+//        return ResponseHelper.successWithList(
+//                ResponseMessage.SUCCESS.getMessage(),
+//                adminService.getMyCamping(userPrincipal.getClerkId())
+//        );
+//    }
+
     @GetMapping("/my-camping")
-    public ResponseEntity<Object> myCamping(@AuthenticationPrincipal UserPrincipal userPrincipal){
+    public ResponseEntity<Object> myCamping(){
         return ResponseHelper.successWithList(
                 ResponseMessage.SUCCESS.getMessage(),
-                adminService.getMyCamping(userPrincipal.getClerkId())
+                adminService.getMyCamping("user_34ekvaVZo5JyAbRZsMEXfSou49z")
         );
     }
 }

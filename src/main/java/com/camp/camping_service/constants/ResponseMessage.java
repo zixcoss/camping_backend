@@ -16,6 +16,7 @@ public enum ResponseMessage {
     FAIL_CAMPING_001("camping not found"),
 
     FAIL_IMAGE_001("upload image unsuccess"),
+    FAIL_IMAGE_002("move image unsuccess"),
 
     FAIL_BOOKING_001("booking not found"),
     FAIL_BOOKING_002("booking payment failed"),

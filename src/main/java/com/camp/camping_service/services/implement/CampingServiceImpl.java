@@ -1,8 +1,10 @@
 package com.camp.camping_service.services.implement;
 
 import com.camp.camping_service.constants.ResponseMessage;
+import com.camp.camping_service.dto.common.ImageObject;
 import com.camp.camping_service.dto.request.CreateCampingRequest;
 import com.camp.camping_service.dto.request.FavoriteRequest;
+import com.camp.camping_service.dto.request.UpdateCampingRequest;
 import com.camp.camping_service.dto.response.CampingListResponse;
 import com.camp.camping_service.dto.response.CampingListResponse.Center;
 import com.camp.camping_service.dto.response.CampingResponse;
@@ -15,6 +17,7 @@ import com.camp.camping_service.repositories.FavoriteRepository;
 import com.camp.camping_service.repositories.LandmarkRepository;
 import com.camp.camping_service.repositories.ProfileRepository;
 import com.camp.camping_service.services.CampingService;
+import com.camp.camping_service.services.ImageService;
 import com.camp.camping_service.utils.GeoUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +38,7 @@ public class CampingServiceImpl implements CampingService {
     private final LandmarkRepository landmarkRepo;
     private final ProfileRepository profileRepo;
     private final FavoriteRepository favoriteRepo;
+    private final ImageService imageService;
 
     @Override
     public void createCamping(CreateCampingRequest request, String clerkId) {
@@ -45,7 +49,11 @@ public class CampingServiceImpl implements CampingService {
                     HttpStatus.NOT_FOUND
                 ));
 
-        boolean isImage = request.getImage() != null;
+        ImageObject image = null;
+
+        if(request.getImage() != null){
+           image = imageService.moveFile(request.getImage().getPublicId(), "Pre-upload", "Landmark");
+        }
 
         Landmark landmark = Landmark.builder()
                 .title(request.getTitle())
@@ -54,13 +62,43 @@ public class CampingServiceImpl implements CampingService {
                 .category(request.getCategory())
                 .lat(request.getLat())
                 .lng(request.getLng())
-                .publicId(isImage ? request.getImage().getPublicId() : null)
-                .secureUrl(isImage ? request.getImage().getSecureUrl() : null)
+                .publicId(image != null ? image.getPublicId() : null)
+                .secureUrl(image != null ? image.getSecureUrl() : null)
                 .profileId(profile.getClerkId())
                 .build();
 
         landmarkRepo.save(landmark);
         log.info("create landmark success.");
+    }
+
+    @Override
+    public void updateCamping(UpdateCampingRequest request) {
+
+        Landmark landmark = landmarkRepo.findById(request.getCode()).orElseThrow(()->
+                new CommonException(
+                    ResponseMessage.FAIL_CAMPING_001.getMessage(),
+                    ResponseMessage.FAIL_CAMPING_001.name(),
+                    HttpStatus.NOT_FOUND
+                ));
+
+        landmark.setTitle(request.getTitle());
+        landmark.setDescription(request.getDescription());
+        landmark.setCategory(request.getCategory());
+        landmark.setPrice(request.getPrice());
+        landmark.setLat(request.getLat());
+        landmark.setLng(request.getLng());
+
+        if(request.getImage() != null){
+            if(!request.getImage().getPublicId().equals(landmark.getPublicId())){
+                imageService.deleteFile(landmark.getPublicId());
+                ImageObject image = imageService.moveFile(request.getImage().getPublicId(),"Pre-upload", "Landmark");
+                landmark.setPublicId(image.getPublicId());
+                landmark.setSecureUrl(image.getSecureUrl());
+            }
+        }
+
+        landmarkRepo.save(landmark);
+        log.info("update landmark success.");
     }
 
     @Override
@@ -110,6 +148,7 @@ public class CampingServiceImpl implements CampingService {
                 .lng(landmark.getLng())
                 .price(landmark.getPrice())
                 .imageUrl(landmark.getSecureUrl())
+                .image(landmark.getPublicId())
                 .category(landmark.getCategory())
                 .build();
     }
@@ -185,14 +224,14 @@ public class CampingServiceImpl implements CampingService {
                         .build()
         ).toList();
         Center center = null;
-        if(centerPoint != null){
+        if (centerPoint != null) {
             center = Center.builder()
                     .lat(centerPoint.getY())
                     .lng(centerPoint.getX())
                     .build();
         }
-        Map<String,Object> data =new HashMap<>();
-        data.put("landmarks",landmarksResponse);
+        Map<String, Object> data = new HashMap<>();
+        data.put("landmarks", landmarksResponse);
         data.put("center", center);
         return data;
     }

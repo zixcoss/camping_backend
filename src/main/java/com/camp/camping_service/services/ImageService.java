@@ -7,4 +7,7 @@ import java.util.Map;
 
 public interface ImageService {
     ImageObject upload(MultipartFile file);
+    ImageObject moveFile(String publicId,String oldFolderName, String newFolderName);
+    void cleanupPreUploadFiles();
+    void deleteFile(String publicId);
 }

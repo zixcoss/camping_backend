@@ -30,7 +30,11 @@ public class SecurityConfig {
     private static final String[] AUTH_WHITELIST = {
             "/camping/**",
             "/campings/**",
-            "/filter-camping/**"
+            "/filter-camping/**",
+//            "/create-camping",
+//            "/images/upload",
+//            "/my-camping",
+//            "/update-camping",
     };
 
     @Bean
@@ -56,7 +60,7 @@ public class SecurityConfig {
     private CorsConfigurationSource corsConfigurationSource(){
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         final CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        config.setAllowedOrigins(List.of("http://localhost:5173","http://localhost:3000"));
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","OPTIONS"));
         config.setAllowCredentials(true);
         config.setAllowedHeaders(List.of("Content-Type", "Authorization", "Accept","Access-Control-Allow-Origin", "Access-Control-Allow-Header"));

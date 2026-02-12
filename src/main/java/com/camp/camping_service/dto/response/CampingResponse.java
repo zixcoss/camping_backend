@@ -16,6 +16,7 @@ public class CampingResponse {
     private BigDecimal lat;
     private BigDecimal lng;
     private String imageUrl;
+    private String image;
     private Long price;
     private String category;
     private Boolean isFavorite;
