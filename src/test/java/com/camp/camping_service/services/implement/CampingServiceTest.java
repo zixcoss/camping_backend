@@ -2,6 +2,7 @@ package com.camp.camping_service.services.implement;
 
 import com.camp.camping_service.dto.common.ImageObject;
 import com.camp.camping_service.dto.request.CreateCampingRequest;
+import com.camp.camping_service.dto.request.UpdateCampingRequest;
 import com.camp.camping_service.entities.Landmark;
 import com.camp.camping_service.entities.Profile;
 import com.camp.camping_service.exceptions.CommonException;
@@ -60,7 +61,7 @@ class CampingServiceTest {
             request.setLng(BigDecimal.valueOf(130));
             request.setImage(
                     ImageObject.builder()
-                            .secureUrl("http://secureurl/image")
+                            .secureUrl("http://secureurl/pre-upload/image")
                             .publicId("public-123")
                             .build()
             );
@@ -72,22 +73,8 @@ class CampingServiceTest {
                     .email("test@mail.com")
                     .build();
 
-            final Landmark testLandmark = Landmark.builder()
-                    .id("landmark-123")
-                    .title(request.getTitle())
-                    .description(request.getDescription())
-                    .price(request.getPrice())
-                    .category(request.getCategory())
-                    .lat(request.getLat())
-                    .lng(request.getLng())
-                    .publicId(request.getImage().getPublicId())
-                    .secureUrl(request.getImage().getSecureUrl())
-                    .profileId(testProfile.getClerkId())
-                    .build();
-
             //given
             when(profileRepo.findByClerkId(anyString())).thenReturn(Optional.of(testProfile));
-            when(landmarkRepo.save(any())).thenReturn(testLandmark);
 
             //when
             campingService.createCamping(request, clerkId);
@@ -120,22 +107,8 @@ class CampingServiceTest {
                     .email("test@mail.com")
                     .build();
 
-            final Landmark testLandmark = Landmark.builder()
-                    .id("landmark-123")
-                    .title(request.getTitle())
-                    .description(request.getDescription())
-                    .price(request.getPrice())
-                    .category(request.getCategory())
-                    .lat(request.getLat())
-                    .lng(request.getLng())
-                    .publicId(null)
-                    .secureUrl(null)
-                    .profileId(testProfile.getClerkId())
-                    .build();
-
             //given
             when(profileRepo.findByClerkId(anyString())).thenReturn(Optional.of(testProfile));
-            when(landmarkRepo.save(any())).thenReturn(testLandmark);
 
             //when
             campingService.createCamping(request, clerkId);
@@ -147,8 +120,9 @@ class CampingServiceTest {
         }
 
         @Test
-        @DisplayName("should create camping when user not found")
+        @DisplayName("should throw exception when user not found")
         void shouldThrowExceptionWhenUserNotFound(){
+            //setup
             final String clerkId = "clerk-123";
 
             final CreateCampingRequest request = new CreateCampingRequest();
@@ -159,9 +133,9 @@ class CampingServiceTest {
             request.setLat(BigDecimal.valueOf(100));
             request.setLng(BigDecimal.valueOf(130));
             request.setImage(null);
-
+            //given
             when(profileRepo.findByClerkId(anyString())).thenReturn(Optional.empty());
-
+            //when & then
             final CommonException exception = assertThrows(CommonException.class, () -> {
                 campingService.createCamping(request,clerkId);
             });
@@ -176,4 +150,145 @@ class CampingServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("update camping test")
+    class UpdateCampingTesting{
+
+        @Test
+        @DisplayName("should update camping success when image not change")
+        void shouldUpdateCampingSuccessWhenImageNotChange(){
+            //setup
+            final UpdateCampingRequest request = new UpdateCampingRequest();
+            request.setCode("landmark-123");
+            request.setTitle("test update");
+            request.setDescription("testing update landmark");
+            request.setPrice(1200L);
+            request.setCategory("hotel");
+            request.setLat(BigDecimal.valueOf(100));
+            request.setLng(BigDecimal.valueOf(130));
+            request.setImage(
+                    ImageObject.builder()
+                            .secureUrl("http://secureurl/landmark/image")
+                            .publicId("public-123")
+                            .build()
+            );
+
+            final Landmark testLandmark = Landmark.builder()
+                    .id("landmark-123")
+                    .title("test")
+                    .description("test")
+                    .price(1000L)
+                    .category("hotel")
+                    .lat(BigDecimal.valueOf(100))
+                    .lng(BigDecimal.valueOf(130))
+                    .publicId("public-123")
+                    .secureUrl("http://secureurl/landmark/image")
+                    .profileId("clerk-123")
+                    .build();
+            //given
+            when(landmarkRepo.findById(anyString())).thenReturn(Optional.of(testLandmark));
+
+            //when
+            campingService.updateCamping(request);
+
+            //then
+            assertEquals(testLandmark.getTitle(), request.getTitle());
+            assertEquals(testLandmark.getDescription(), request.getDescription());
+            assertEquals(testLandmark.getPrice(), request.getPrice());
+
+            verify(landmarkRepo, times(1)).findById(anyString());
+            verify(landmarkRepo,times(1)).save(any());
+            verifyNoInteractions(imageService);
+        }
+
+        @Test
+        @DisplayName("should update camping success when image change")
+        void shouldUpdateCamingSuccessWhenImageChange(){
+            //setup
+            final UpdateCampingRequest request = new UpdateCampingRequest();
+            request.setCode("landmark-123");
+            request.setTitle("test update");
+            request.setDescription("testing update landmark");
+            request.setPrice(1200L);
+            request.setCategory("hotel");
+            request.setLat(BigDecimal.valueOf(100));
+            request.setLng(BigDecimal.valueOf(130));
+            request.setImage(
+                    ImageObject.builder()
+                            .secureUrl("http://secureurl/pre-upload/image2")
+                            .publicId("public-456")
+                            .build()
+            );
+
+            final Landmark testLandmark = Landmark.builder()
+                    .id("landmark-123")
+                    .title("test")
+                    .description("test")
+                    .price(1000L)
+                    .category("hotel")
+                    .lat(BigDecimal.valueOf(100))
+                    .lng(BigDecimal.valueOf(130))
+                    .publicId("public-123")
+                    .secureUrl("http://secureurl/landmark/image")
+                    .profileId("clerk-123")
+                    .build();
+
+            final ImageObject image = ImageObject.builder()
+                    .secureUrl("http://secureurl/landmark/image2")
+                    .publicId("public-456")
+                    .build();
+
+            //given
+            when(landmarkRepo.findById(anyString())).thenReturn(Optional.of(testLandmark));
+            when(imageService.moveFile(anyString(),anyString(),anyString())).thenReturn(image);
+
+            //when
+            campingService.updateCamping(request);
+
+            //then
+            assertEquals(testLandmark.getTitle(), request.getTitle());
+            assertEquals(testLandmark.getDescription(), request.getDescription());
+            assertEquals(testLandmark.getPrice(), request.getPrice());
+
+            verify(landmarkRepo, times(1)).findById(anyString());
+            verify(landmarkRepo,times(1)).save(any());
+            verify(imageService, times(1)).deleteFile(anyString());
+            verify(imageService, times(1)).moveFile(anyString(),anyString(),anyString());
+        }
+
+        @Test
+        @DisplayName("should throw exception when landmark not found")
+        void shouldThrowExceptionWhenLandmarkNotFound(){
+            //setup
+            final UpdateCampingRequest request = new UpdateCampingRequest();
+            request.setCode("landmark-123");
+            request.setTitle("test update");
+            request.setDescription("testing update landmark");
+            request.setPrice(1200L);
+            request.setCategory("hotel");
+            request.setLat(BigDecimal.valueOf(100));
+            request.setLng(BigDecimal.valueOf(130));
+            request.setImage(
+                    ImageObject.builder()
+                            .secureUrl("http://secureurl/pre-upload/image2")
+                            .publicId("public-456")
+                            .build()
+            );
+            //given
+            when(landmarkRepo.findById(anyString())).thenReturn(Optional.empty());
+
+            //when & then
+            final CommonException exception = assertThrows(CommonException.class, () -> {
+                campingService.updateCamping(request);
+            });
+
+            assertEquals("FAIL_CAMPING_001", exception.getCode());
+            assertEquals("camping not found", exception.getMessage());
+            assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+
+            verify(landmarkRepo, times(1)).findById(anyString());
+            verify(landmarkRepo, never()).save(any());
+            verifyNoInteractions(imageService);
+        }
+    }
 }
