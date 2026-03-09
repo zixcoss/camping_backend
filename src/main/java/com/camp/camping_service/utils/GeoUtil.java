@@ -1,7 +1,6 @@
 package com.camp.camping_service.utils;
 
 import com.camp.camping_service.dto.select.SelectLandmarkListRecord;
-import com.camp.camping_service.entities.Landmark;
 import org.locationtech.jts.geom.*;
 
 import java.util.List;

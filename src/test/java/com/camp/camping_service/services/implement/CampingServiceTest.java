@@ -3,6 +3,9 @@ package com.camp.camping_service.services.implement;
 import com.camp.camping_service.dto.common.ImageObject;
 import com.camp.camping_service.dto.request.CreateCampingRequest;
 import com.camp.camping_service.dto.request.UpdateCampingRequest;
+import com.camp.camping_service.dto.response.CampingListResponse;
+import com.camp.camping_service.dto.response.CampingResponse;
+import com.camp.camping_service.dto.select.SelectLandmarkListRecord;
 import com.camp.camping_service.entities.Landmark;
 import com.camp.camping_service.entities.Profile;
 import com.camp.camping_service.exceptions.CommonException;
@@ -20,10 +23,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -140,6 +144,7 @@ class CampingServiceTest {
                 campingService.createCamping(request,clerkId);
             });
 
+            assertNotNull(exception);
             assertEquals("FAIL_USER_001", exception.getCode());
             assertEquals("user not found", exception.getMessage());
             assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
@@ -282,6 +287,7 @@ class CampingServiceTest {
                 campingService.updateCamping(request);
             });
 
+            assertNotNull(exception);
             assertEquals("FAIL_CAMPING_001", exception.getCode());
             assertEquals("camping not found", exception.getMessage());
             assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
@@ -289,6 +295,120 @@ class CampingServiceTest {
             verify(landmarkRepo, times(1)).findById(anyString());
             verify(landmarkRepo, never()).save(any());
             verifyNoInteractions(imageService);
+        }
+    }
+
+    @Nested
+    @DisplayName("get list camping test")
+    class GetListCampingTesting{
+        @Test
+        @DisplayName("should get list camping successfully")
+        void shouldGetListCampingSuccessfully(){
+            //setup
+            final String clarkId = "clark-123";
+            final List<SelectLandmarkListRecord> testLandmarkList = List.of(
+                    new SelectLandmarkListRecord("landmark-123","test1","test1",1000L, BigDecimal.valueOf(100L),BigDecimal.valueOf(10L),"http://secure/image1","fav-123"),
+                    new SelectLandmarkListRecord("landmark-456","test2","test2",1000L, BigDecimal.valueOf(120L),BigDecimal.valueOf(20L),"http://secure/image2","fav-234")
+            );
+
+            //given
+            when(landmarkRepo.findAllWithFavorite(anyString(),isNull(),eq(""))).thenReturn(testLandmarkList);
+
+            //when
+            Map<String, Object> result = campingService.getListCamping(clarkId);
+
+            //then
+            assertNotNull(result);
+            assertNotNull(result.get("landmarks"));
+            assertNotNull(result.get("center"));
+
+            Object landmarksObj = result.get("landmarks");
+            List<?> landmarks = assertInstanceOf(List.class, landmarksObj);
+            assertEquals(testLandmarkList.size(), landmarks.size());
+
+            verify(landmarkRepo, times(1)).findAllWithFavorite(anyString(), isNull(), eq(""));
+        }
+
+        @Test
+        @DisplayName("should get list camping successfully when no information")
+        void shouldGetListCampingSuccessfullyWhenNoInformation(){
+            //setup
+            final String clarkId = "clark-123";
+
+            //given
+            when(landmarkRepo.findAllWithFavorite(anyString(),isNull(),eq(""))).thenReturn(List.of());
+
+            //when
+            Map<String, Object> result = campingService.getListCamping(clarkId);
+
+            //then
+            assertNotNull(result);
+            assertNotNull(result.get("landmarks"));
+            assertNull(result.get("center"));
+
+            Object landmarksObj = result.get("landmarks");
+            List<?> landmarks = assertInstanceOf(List.class, landmarksObj);
+            assertEquals(0, landmarks.size());
+
+            verify(landmarkRepo, times(1)).findAllWithFavorite(anyString(), isNull(), eq(""));
+        }
+    }
+
+    @Nested
+    @DisplayName("get camping test")
+    class GetCampingTest{
+        @Test
+        @DisplayName("get camping successfully")
+        void GetCampingSuccessfully(){
+            //setup
+            final String landmarkId = "landmark-123";
+            final Landmark testLandmark = Landmark.builder()
+                    .id("landmark-123")
+                    .title("test")
+                    .description("test")
+                    .price(1000L)
+                    .category("hotel")
+                    .lat(BigDecimal.valueOf(100))
+                    .lng(BigDecimal.valueOf(130))
+                    .publicId("public-123")
+                    .secureUrl("http://secureurl/landmark/image")
+                    .profileId("clerk-123")
+                    .build();
+
+            //given
+            when(landmarkRepo.findById(anyString())).thenReturn(Optional.of(testLandmark));
+
+            //when
+            CampingResponse result = campingService.getCamping(landmarkId);
+
+            //then
+            assertNotNull(result);
+            assertEquals(testLandmark.getId(),result.getCode());
+            assertEquals(testLandmark.getTitle(), result.getTitle());
+
+            verify(landmarkRepo, times(1)).findById(anyString());
+        }
+
+        @Test
+        @DisplayName("get camping when camping not found")
+        void GetCampingWhenCampingNotFound(){
+            //setup
+            final String landmarkId = "landmark-123";
+
+            //given
+            when(landmarkRepo.findById(anyString())).thenReturn(Optional.empty());
+
+            //when & then
+            final CommonException exception = assertThrows(CommonException.class, () -> {
+                campingService.getCamping(landmarkId);
+            });
+
+            assertNotNull(exception);
+            assertEquals("FAIL_CAMPING_001", exception.getCode());
+            assertEquals("camping not found", exception.getMessage());
+            assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+
+            verify(landmarkRepo, times(1)).findById(anyString());
         }
     }
 }
