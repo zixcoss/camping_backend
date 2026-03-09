@@ -2,6 +2,7 @@ package com.camp.camping_service.services.implement;
 
 import com.camp.camping_service.dto.common.ImageObject;
 import com.camp.camping_service.dto.request.CreateCampingRequest;
+import com.camp.camping_service.dto.request.FavoriteRequest;
 import com.camp.camping_service.dto.request.UpdateCampingRequest;
 import com.camp.camping_service.dto.response.CampingListResponse;
 import com.camp.camping_service.dto.response.CampingResponse;
@@ -13,6 +14,7 @@ import com.camp.camping_service.repositories.FavoriteRepository;
 import com.camp.camping_service.repositories.LandmarkRepository;
 import com.camp.camping_service.repositories.ProfileRepository;
 import com.camp.camping_service.services.ImageService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -51,12 +53,13 @@ class CampingServiceTest {
     @DisplayName("create camping test")
     class CreateCampingTesting{
 
-        @Test
-        @DisplayName("should create camping successfully")
-        void shouldCreateCampingSuccessfully(){
-            //setup
-            final String clerkId = "clerk-123";
-            final CreateCampingRequest request = new CreateCampingRequest();
+        final String clerkId = "clerk-123";
+        CreateCampingRequest request;
+        Profile testProfile;
+
+        @BeforeEach
+        void setup(){
+            request = new CreateCampingRequest();
             request.setTitle("test");
             request.setDescription("testing create landmark");
             request.setPrice(1000L);
@@ -70,13 +73,17 @@ class CampingServiceTest {
                             .build()
             );
 
-            final Profile testProfile = Profile.builder()
+            testProfile = Profile.builder()
                     .clerkId(clerkId)
                     .firstName("John")
                     .lastName("Doe")
                     .email("test@mail.com")
                     .build();
+        }
 
+        @Test
+        @DisplayName("should create camping successfully")
+        void shouldCreateCampingSuccessfully(){
             //given
             when(profileRepo.findByClerkId(anyString())).thenReturn(Optional.of(testProfile));
 
@@ -94,22 +101,7 @@ class CampingServiceTest {
         @DisplayName("should create camping successfully and no image")
         void shouldCreateCampingSuccessfullyAndNoImage(){
             //setup
-            final String clerkId = "clerk-123";
-            final CreateCampingRequest request = new CreateCampingRequest();
-            request.setTitle("test");
-            request.setDescription("testing create landmark");
-            request.setPrice(1000L);
-            request.setCategory("hotel");
-            request.setLat(BigDecimal.valueOf(100));
-            request.setLng(BigDecimal.valueOf(130));
             request.setImage(null);
-
-            final Profile testProfile = Profile.builder()
-                    .clerkId(clerkId)
-                    .firstName("John")
-                    .lastName("Doe")
-                    .email("test@mail.com")
-                    .build();
 
             //given
             when(profileRepo.findByClerkId(anyString())).thenReturn(Optional.of(testProfile));
@@ -126,17 +118,6 @@ class CampingServiceTest {
         @Test
         @DisplayName("should throw exception when user not found")
         void shouldThrowExceptionWhenUserNotFound(){
-            //setup
-            final String clerkId = "clerk-123";
-
-            final CreateCampingRequest request = new CreateCampingRequest();
-            request.setTitle("test");
-            request.setDescription("testing create landmark");
-            request.setPrice(1000L);
-            request.setCategory("hotel");
-            request.setLat(BigDecimal.valueOf(100));
-            request.setLng(BigDecimal.valueOf(130));
-            request.setImage(null);
             //given
             when(profileRepo.findByClerkId(anyString())).thenReturn(Optional.empty());
             //when & then
@@ -301,11 +282,13 @@ class CampingServiceTest {
     @Nested
     @DisplayName("get list camping test")
     class GetListCampingTesting{
+
+        final String clarkId = "clark-123";
+
         @Test
         @DisplayName("should get list camping successfully")
         void shouldGetListCampingSuccessfully(){
-            //setup
-            final String clarkId = "clark-123";
+
             final List<SelectLandmarkListRecord> testLandmarkList = List.of(
                     new SelectLandmarkListRecord("landmark-123","test1","test1",1000L, BigDecimal.valueOf(100L),BigDecimal.valueOf(10L),"http://secure/image1","fav-123"),
                     new SelectLandmarkListRecord("landmark-456","test2","test2",1000L, BigDecimal.valueOf(120L),BigDecimal.valueOf(20L),"http://secure/image2","fav-234")
@@ -332,8 +315,6 @@ class CampingServiceTest {
         @Test
         @DisplayName("should get list camping successfully when no information")
         void shouldGetListCampingSuccessfullyWhenNoInformation(){
-            //setup
-            final String clarkId = "clark-123";
 
             //given
             when(landmarkRepo.findAllWithFavorite(anyString(),isNull(),eq(""))).thenReturn(List.of());
@@ -357,11 +338,12 @@ class CampingServiceTest {
     @Nested
     @DisplayName("get camping test")
     class GetCampingTest{
+
+        final String landmarkId = "landmark-123";
+
         @Test
-        @DisplayName("get camping successfully")
-        void GetCampingSuccessfully(){
-            //setup
-            final String landmarkId = "landmark-123";
+        @DisplayName("should get camping successfully")
+        void shouldGetCampingSuccessfully(){
             final Landmark testLandmark = Landmark.builder()
                     .id("landmark-123")
                     .title("test")
@@ -390,11 +372,8 @@ class CampingServiceTest {
         }
 
         @Test
-        @DisplayName("get camping when camping not found")
-        void GetCampingWhenCampingNotFound(){
-            //setup
-            final String landmarkId = "landmark-123";
-
+        @DisplayName("should throw exception when camping not found")
+        void shouldThrowExceptionWhenCampingNotFound(){
             //given
             when(landmarkRepo.findById(anyString())).thenReturn(Optional.empty());
 
@@ -409,6 +388,131 @@ class CampingServiceTest {
             assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
 
             verify(landmarkRepo, times(1)).findById(anyString());
+        }
+    }
+
+    @Nested
+    @DisplayName("add or remove favorite test")
+    class AddOrRemoveFavoriteTest{
+
+        Profile testProfile;
+        Landmark testLandmark;
+        FavoriteRequest testRequest;
+        final String clerkId = "clerk-123";
+
+        @BeforeEach
+        void setup(){
+            testProfile = Profile.builder()
+                    .clerkId("clerk-123")
+                    .firstName("John")
+                    .lastName("Doe")
+                    .email("test@mail.com")
+                    .build();
+
+            testLandmark = Landmark.builder()
+                    .id("landmark-123")
+                    .title("test")
+                    .description("test")
+                    .price(1000L)
+                    .category("hotel")
+                    .lat(BigDecimal.valueOf(100))
+                    .lng(BigDecimal.valueOf(130))
+                    .publicId("public-123")
+                    .secureUrl("http://secureurl/landmark/image")
+                    .profileId("clerk-123")
+                    .build();
+
+            testRequest = new FavoriteRequest();
+            testRequest.setCampingCode("landmark-123");
+            testRequest.setIsFavorite(false);
+        }
+
+        @Test
+        @DisplayName("should add favorite camping successfully")
+        void shouldAddFavoriteCampingSuccessfully(){
+            //given
+            when(profileRepo.findByClerkId(anyString())).thenReturn(Optional.of(testProfile));
+            when(landmarkRepo.findById(anyString())).thenReturn(Optional.of(testLandmark));
+
+            //when
+            final String result = campingService.addOrRemoveFavorite(testRequest, clerkId);
+
+            //then
+            assertNotNull(result);
+            assertEquals("Add landmark in My favorite", result);
+
+            verify(profileRepo, times(1)).findByClerkId(anyString());
+            verify(landmarkRepo, times(1)).findById(anyString());
+            verify(favoriteRepo, times(1)).save(any());
+            verify(favoriteRepo, never()).deleteAllByProfileIdAndLandmarkId(anyString(),anyString());
+        }
+
+        @Test
+        @DisplayName("should remove favorite camping successfully")
+        void shouldRemoveFavoriteCampingSuccessfully(){
+            //setup
+            testRequest.setIsFavorite(true);
+
+            //given
+            when(profileRepo.findByClerkId(anyString())).thenReturn(Optional.of(testProfile));
+            when(landmarkRepo.findById(anyString())).thenReturn(Optional.of(testLandmark));
+
+            //when
+            final String result = campingService.addOrRemoveFavorite(testRequest, clerkId);
+
+            //then
+            assertNotNull(result);
+            assertEquals("Remove landmark in My favorite", result);
+
+            verify(profileRepo, times(1)).findByClerkId(anyString());
+            verify(landmarkRepo, times(1)).findById(anyString());
+            verify(favoriteRepo, never()).save(any());
+            verify(favoriteRepo, times(1)).deleteAllByProfileIdAndLandmarkId(anyString(),anyString());
+        }
+
+        @Test
+        @DisplayName("should throw exception when user not found")
+        void shouldThrowExceptionWhenUserNotFound(){
+
+            //given
+            when(profileRepo.findByClerkId(anyString())).thenReturn(Optional.empty());
+
+            //when & then
+            final CommonException exception = assertThrows(CommonException.class, () -> {
+                campingService.addOrRemoveFavorite(testRequest,clerkId);
+            });
+
+            assertNotNull(exception);
+            assertEquals("FAIL_USER_001", exception.getCode());
+            assertEquals("user not found", exception.getMessage());
+            assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+
+            verify(profileRepo, times(1)).findByClerkId(anyString());
+            verifyNoInteractions(landmarkRepo);
+            verifyNoInteractions(favoriteRepo);
+        }
+
+        @Test
+        @DisplayName("should throw exception when landmark not found")
+        void shouldThrowExceptionWhenLandmarkNotFound(){
+
+            //given
+            when(profileRepo.findByClerkId(anyString())).thenReturn(Optional.of(testProfile));
+            when(landmarkRepo.findById(anyString())).thenReturn(Optional.empty());
+
+            //when & then
+            final CommonException exception = assertThrows(CommonException.class, () -> {
+                campingService.addOrRemoveFavorite(testRequest,clerkId);
+            });
+
+            assertNotNull(exception);
+            assertEquals("FAIL_CAMPING_001", exception.getCode());
+            assertEquals("camping not found", exception.getMessage());
+            assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+
+            verify(profileRepo, times(1)).findByClerkId(anyString());
+            verify(landmarkRepo, times(1)).findById(anyString());
+            verifyNoInteractions(favoriteRepo);
         }
     }
 }
