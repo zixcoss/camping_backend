@@ -7,6 +7,7 @@ import com.camp.camping_service.dto.request.UpdateCampingRequest;
 import com.camp.camping_service.dto.response.CampingListResponse;
 import com.camp.camping_service.dto.response.CampingResponse;
 import com.camp.camping_service.dto.select.SelectLandmarkListRecord;
+import com.camp.camping_service.entities.Favorite;
 import com.camp.camping_service.entities.Landmark;
 import com.camp.camping_service.entities.Profile;
 import com.camp.camping_service.exceptions.CommonException;
@@ -513,6 +514,80 @@ class CampingServiceTest {
             verify(profileRepo, times(1)).findByClerkId(anyString());
             verify(landmarkRepo, times(1)).findById(anyString());
             verifyNoInteractions(favoriteRepo);
+        }
+    }
+
+    @Nested
+    @DisplayName("get list my favorite test")
+    class GetListMyFavoriteTest{
+
+        final String clerkId = "clerk-123";
+
+        @Test
+        @DisplayName("should get list my favorite successfully when it have data")
+        void shouldGetListMyFavoriteSuccessfullyWhenHaveData(){
+            //setup
+            final List<Favorite> testFavorite = List.of(
+                    Favorite.builder().id("fav-123").profileId(clerkId).landmarkId("landmark-123").landmark(
+                            Landmark.builder()
+                                    .id("landmark-123")
+                                    .title("test")
+                                    .description("test")
+                                    .price(1000L)
+                                    .category("hotel")
+                                    .lat(BigDecimal.valueOf(100))
+                                    .lng(BigDecimal.valueOf(130))
+                                    .publicId("public-123")
+                                    .secureUrl("http://secureurl/landmark/image")
+                                    .profileId("clerk-123")
+                                    .build()
+                    ).build(),
+                    Favorite.builder().id("fav-234").profileId(clerkId).landmarkId("landmark-234").landmark(
+                            Landmark.builder()
+                                    .id("landmark-234")
+                                    .title("test2")
+                                    .description("test2")
+                                    .price(1200L)
+                                    .category("hotel")
+                                    .lat(BigDecimal.valueOf(120))
+                                    .lng(BigDecimal.valueOf(100))
+                                    .publicId("public-234")
+                                    .secureUrl("http://secureurl/landmark/image2")
+                                    .profileId("clerk-123")
+                                    .build()
+                    ).build()
+            );
+
+            //given
+            when(favoriteRepo.findByProfileId(clerkId)).thenReturn(testFavorite);
+
+            //when
+            List<CampingListResponse> result = campingService.getListMyFavorite(clerkId);
+            CampingListResponse resultCamping = result.get(0);
+
+            //then
+            assertNotNull(result);
+            assertEquals(testFavorite.size(), result.size());
+            assertEquals(testFavorite.get(0).getLandmarkId(), resultCamping.getCode());
+
+            verify(favoriteRepo, times(1)).findByProfileId(anyString());
+        }
+
+        @Test
+        @DisplayName("should get list my favorite successfully when it not have data")
+        void shouldGetListMyFavoriteSuccessfullyWhenNotHaveData(){
+
+            //given
+            when(favoriteRepo.findByProfileId(clerkId)).thenReturn(List.of());
+
+            //when
+            List<CampingListResponse> result = campingService.getListMyFavorite(clerkId);
+
+            //then
+            assertNotNull(result);
+            assertEquals(0, result.size());
+
+            verify(favoriteRepo, times(1)).findByProfileId(anyString());
         }
     }
 }
