@@ -590,4 +590,60 @@ class CampingServiceTest {
             verify(favoriteRepo, times(1)).findByProfileId(anyString());
         }
     }
+
+    @Nested
+    @DisplayName("get list camping with filter test")
+    class GetListCampingWithFilterTesting{
+
+        final String clerkId = "clark-123";
+
+        @Test
+        @DisplayName("should get list camping with filter successfully")
+        void shouldGetListCampingWithFilterSuccessfully(){
+
+            final List<SelectLandmarkListRecord> testLandmarkList = List.of(
+                    new SelectLandmarkListRecord("landmark-123","test1","test1",1000L, BigDecimal.valueOf(100L),BigDecimal.valueOf(10L),"http://secure/image1","fav-123"),
+                    new SelectLandmarkListRecord("landmark-456","test2","test2",1000L, BigDecimal.valueOf(120L),BigDecimal.valueOf(20L),"http://secure/image2","fav-234")
+            );
+
+            //given
+            when(landmarkRepo.findAllWithFavorite(anyString(),anyString(),anyString())).thenReturn(testLandmarkList);
+
+            //when
+            Map<String, Object> result = campingService.getListCampingWithFilter("hotel","test",clerkId);
+
+            //then
+            assertNotNull(result);
+            assertNotNull(result.get("landmarks"));
+            assertNotNull(result.get("center"));
+
+            Object landmarksObj = result.get("landmarks");
+            List<?> landmarks = assertInstanceOf(List.class, landmarksObj);
+            assertEquals(testLandmarkList.size(), landmarks.size());
+
+            verify(landmarkRepo, times(1)).findAllWithFavorite(anyString(),anyString(),anyString());
+        }
+
+        @Test
+        @DisplayName("should get list camping with filter successfully when no information")
+        void shouldGetListCampingWithFilterSuccessfullyWhenNoInformation(){
+
+            //given
+            when(landmarkRepo.findAllWithFavorite(anyString(),anyString(),anyString())).thenReturn(List.of());
+
+            //when
+            Map<String, Object> result = campingService.getListCampingWithFilter("hotel","test",clerkId);
+
+            //then
+            assertNotNull(result);
+            assertNotNull(result.get("landmarks"));
+            assertNull(result.get("center"));
+
+            Object landmarksObj = result.get("landmarks");
+            List<?> landmarks = assertInstanceOf(List.class, landmarksObj);
+            assertEquals(0, landmarks.size());
+
+            verify(landmarkRepo, times(1)).findAllWithFavorite(anyString(),anyString(),anyString());
+        }
+    }
 }
